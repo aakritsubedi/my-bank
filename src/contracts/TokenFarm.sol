@@ -5,6 +5,7 @@ import "./DaiToken.sol";
 
 contract TokenFarm {
     string public name = "AAku Token Farm";
+    address public owner;
     AakuToken public aakuToken;
     DaiToken public daiToken;
 
@@ -16,10 +17,14 @@ contract TokenFarm {
     constructor(AakuToken _aakuToken, DaiToken _daiToken) public {
         aakuToken = _aakuToken;
         daiToken = _daiToken;
+        owner = msg.sender;
     }
 
-    // 1. Stakes Tokens : put money into app
+    //  Stakes Tokens : put money into app
     function stakeTokens(uint256 _amounts) public {
+        // Require amount greater than 0
+        require(_amounts > 0, "Amount cannot be zero...");
+
         // Transfer Mock Dai token to this contract for staking
         daiToken.transferFrom(msg.sender, address(this), _amounts);
         // Update staking balance
@@ -32,7 +37,32 @@ contract TokenFarm {
         isStaking[msg.sender] = true;
         hasStaked[msg.sender] = true;
     }
-    // 2. Unstaking Tokens : get money from app
 
-    // 3. Issuing Tokens :
+    //  Issuing Tokens
+    function issueTokens() public {
+        // Only owner can this function
+        require(msg.sender == owner, "Unauthorised");
+
+        for (uint256 i = 0; i < stakers.length; i++) {
+            address recipient = stakers[i];
+            uint256 balance = stakingBalance[recipient];
+            if (balance > 0) {
+                aakuToken.transfer(recipient, balance);
+            }
+        }
+    }
+
+    //  Unstaking Tokens : get money from app
+    function unstakeTokens() public {
+        // Fetch staking balance
+        uint256 balance = stakingBalance[msg.sender];
+        // Require amount greater than 0
+        require(balance > 0, "Staking balance can't be zero...");
+        // Transfer Mock Dai token to this contract for staking
+        daiToken.transfer(msg.sender, balance);
+
+        // Reset staking balance and update staking status
+        stakingBalance[msg.sender] = 0;
+        isStaking[msg.sender] = false;
+    }
 }
