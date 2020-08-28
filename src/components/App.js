@@ -6,6 +6,8 @@ import AakuToken from "../abis/AakuToken.json";
 import TokenFarm from "../abis/TokenFarm.json";
 
 import Navbar from "./Navbar";
+import Main from "./Main";
+
 import "./App.css";
 
 class App extends Component {
@@ -100,7 +102,50 @@ class App extends Component {
     };
   }
 
+  stakeTokens = (amount) => {
+    this.setState({ loading: true });
+    this.state.daiToken.methods
+      .approve(this.state.tokenFarm._address, amount)
+      .send({ from: this.state.account })
+      .on("transactionHash", (hash) => {
+        this.state.tokenFarm.methods
+          .stakeTokens(amount)
+          .send({ from: this.state.account })
+          .on("transactionHash", (hash) => {
+            this.setState({ loading: false });
+          });
+      });
+  };
+
+  unstakeTokens = (amount) => {
+    this.setState({ loading: true });
+    this.state.tokenFarm.methods
+      .unstakeTokens()
+      .send({ from: this.state.account })
+      .on("transactionHash", (hash) => {
+        this.setState({ loading: false });
+      });
+  };
+
   render() {
+    let content;
+    if (this.state.content) {
+      content = (
+        <p id="loader" className="text-center">
+          Loading ...
+        </p>
+      );
+    } else {
+      content = (
+        <Main
+          daiTokenBalance={this.state.daiTokenBalance}
+          aakuTokenBalance={this.state.aakuTokenBalance}
+          stakingBalance={this.state.stakingBalance}
+          stakeTokens={this.stakeTokens}
+          unstakeTokens={this.unstakeTokens}
+        />
+      );
+    }
     return (
       <div>
         <Navbar account={this.state.account} />
@@ -112,13 +157,7 @@ class App extends Component {
               style={{ maxWidth: "600px" }}
             >
               <div className="content mr-auto ml-auto">
-                <a
-                  href="http://www.aakritsubedi.com.np"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                ></a>
-
-                <h1>Hey Money</h1>
+                {content}
               </div>
             </main>
           </div>
